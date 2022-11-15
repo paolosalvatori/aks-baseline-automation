@@ -106,15 +106,6 @@ jobs:
       - name: Get application k8s manifests from repo
         uses: actions/checkout@v2
 
-      - name: Kubelogin
-        env:
-          kubeloginversion: 'v0.0.21'
-        run: |
-          wget https://github.com/Azure/kubelogin/releases/download/${{ env.kubeloginversion }}/kubelogin-linux-amd64.zip
-          unzip kubelogin-linux-amd64.zip
-          sudo mv bin/linux_amd64/kubelogin /usr/bin
-          kubelogin convert-kubeconfig -l azurecli
-          
       - name: Azure Login
         uses: Azure/login@v1.4.3
         with:
@@ -125,15 +116,22 @@ jobs:
       - name: Install Kubectl
         uses: azure/setup-kubectl@v2.0
         with:
-            version: 'latest'
+          version: 'latest'
 
       - name: Set the target Azure Kubernetes Service (AKS) cluster.
         uses: azure/aks-set-context@v2.0
         with:
           cluster-name: ${{ inputs.AKSNAME }}
           resource-group: ${{ inputs.RG }}
-          admin: 'false'
-          use-kubelogin: 'true'
+
+      - name: Download and run Kubelogin
+        env:
+          kubeloginversion: 'v0.0.21'
+        run: |
+          wget https://github.com/Azure/kubelogin/releases/download/${{ env.kubeloginversion }}/kubelogin-linux-amd64.zip
+          unzip kubelogin-linux-amd64.zip
+          sudo mv bin/linux_amd64/kubelogin /usr/bin
+          kubelogin convert-kubeconfig -l azurecli
 
       - name: Create the namespace if it does not exist
         if: ${{ inputs.NAMESPACE }} != 'default'
