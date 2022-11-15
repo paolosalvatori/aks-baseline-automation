@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     env:
-      ACRNAME: "${{ inputs.ACRNAME}}"
+      ACRNAME: "${{ inputs.ACRNAME }}"
 
     steps:
       - name: Get application code from repo
@@ -106,6 +106,15 @@ jobs:
       - name: Get application k8s manifests from repo
         uses: actions/checkout@v2
 
+      - name: Kubelogin
+        env:
+          kubeloginversion: 'v0.0.21'
+        run: |
+          wget https://github.com/Azure/kubelogin/releases/download/${{ env.kubeloginversion }}/kubelogin-linux-amd64.zip
+          unzip kubelogin-linux-amd64.zip
+          sudo mv bin/linux_amd64/kubelogin /usr/bin
+          kubelogin convert-kubeconfig -l azurecli
+          
       - name: Azure Login
         uses: Azure/login@v1.4.3
         with:
@@ -123,15 +132,8 @@ jobs:
         with:
           cluster-name: ${{ inputs.AKSNAME }}
           resource-group: ${{ inputs.RG }}
-
-      - name: Kubelogin
-        env:
-          kubeloginversion: 'v0.0.11'
-        run: |
-          wget https://github.com/Azure/kubelogin/releases/download/${{ env.kubeloginversion }}/kubelogin-linux-amd64.zip
-          unzip kubelogin-linux-amd64.zip
-          sudo mv bin/linux_amd64/kubelogin /usr/bin
-          kubelogin convert-kubeconfig -l azurecli
+          admin: 'false'
+          use-kubelogin: 'true'
 
       - name: Create the namespace if it does not exist
         if: ${{ inputs.NAMESPACE }} != 'default'
