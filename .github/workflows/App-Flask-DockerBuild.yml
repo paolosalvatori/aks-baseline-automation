@@ -139,13 +139,40 @@ jobs:
           cmdOut=$(kubectl get namespaces ${{ inputs.NAMESPACE }} -o json | jq -r '.status.phase')
           if [ "$cmdOut" != 'Active' ]; then kubectl create namespace ${{ inputs.NAMESPACE }}; fi
 
+      - name: Set container image
+        uses: mikefarah/yq@master
+        env:
+          IMAGE: ${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
+        with:
+          cmd: yq -i "(.spec.template.spec.containers[0].image)|="\""$IMAGE"\" workloads/flask/deployment.yaml
+      
+      - name: Set container image
+        uses: mikefarah/yq@master
+        env:
+          IMAGE: ${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
+        with:
+          cmd: yq -i "(.spec.template.spec.containers[0].image)|="\""$IMAGE"\" workloads/flask/deployment.yaml
+
+      - name: Read public IP address of the NGINX ingress controller
+        id: step_one
+        run: |
+          echo "ipAddress=$(kubectl get service -n ingress-basic -o json | jq -r '.items[].status.loadBalancer.ingress[0] | select(. != null) | .ip')" >> $GITHUB_ENV
+      
+      - name: Set ingress hostname
+        uses: mikefarah/yq@master
+        env:
+          IPADDRESS: ${{ env.ipAddress }}
+        with:
+          cmd: yq -i "(.spec.rules[0].host)|="\""$IPADDRESS.nip.io"\" workloads/flask/ingress.yaml
+
       - name: Deploy app to AKS
         uses: azure/k8s-deploy@v1.5
         env:
-          ACRNAME: "${{ inputs.ACRNAME}}"
+          ACRNAME: "${{ inputs.ACRNAME }}"
         with:
           manifests: |
            workloads/flask/deployment.yaml
+           workloads/flask/service.yaml
            workloads/flask/ingress.yaml
           images: |
             ${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
