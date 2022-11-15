@@ -7,14 +7,17 @@ on:
     inputs:
       RG:
         description: 'The Resource Group where your resources are deployed'
+        default: "MiaRG"
         required: true
         type: string
       AKSNAME:
         description: 'The Name of the AKS resource'
+        default: "MiaAks"
         required: true
         type: string
       ACRNAME:
         description: 'The Name of the ACR resource'
+        default: "MiaAcr"
         required: true
         type: string
       APPNAME:
@@ -24,7 +27,7 @@ on:
         type: string
       NAMESPACE:
         description: 'The Kubernetes Namespace to deploy the Application to'
-        default: "default"
+        default: "flask"
         required: false
         type: string
       ENVIRONMENT:
@@ -139,31 +142,20 @@ jobs:
           cmdOut=$(kubectl get namespaces ${{ inputs.NAMESPACE }} -o json | jq -r '.status.phase')
           if [ "$cmdOut" != 'Active' ]; then kubectl create namespace ${{ inputs.NAMESPACE }}; fi
 
-      - name: Set container image
+      - name: Set Container Image
         uses: mikefarah/yq@master
-        env:
-          IMAGE: ${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
         with:
-          cmd: yq -i "(.spec.template.spec.containers[0].image)|="\""$IMAGE"\" workloads/flask/deployment.yaml
-      
-      - name: Set container image
-        uses: mikefarah/yq@master
-        env:
-          IMAGE: ${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
-        with:
-          cmd: yq -i "(.spec.template.spec.containers[0].image)|="\""$IMAGE"\" workloads/flask/deployment.yaml
+          cmd: yq -i "(.spec.template.spec.containers[0].image)|="\""${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"\" workloads/flask/deployment.yaml
 
-      - name: Read public IP address of the NGINX ingress controller
+      - name: Read Public IP address of the NGINX Ingress Controller
         id: step_one
         run: |
           echo "ipAddress=$(kubectl get service -n ingress-basic -o json | jq -r '.items[].status.loadBalancer.ingress[0] | select(. != null) | .ip')" >> $GITHUB_ENV
       
-      - name: Set ingress hostname
+      - name: Set Ingress Hostname
         uses: mikefarah/yq@master
-        env:
-          IPADDRESS: ${{ env.ipAddress }}
         with:
-          cmd: yq -i "(.spec.rules[0].host)|="\""$IPADDRESS.nip.io"\" workloads/flask/ingress.yaml
+          cmd: yq -i "(.spec.rules[0].host)|="\""${{ env.ipAddress }}.nip.io"\" workloads/flask/ingress.yaml
 
       - name: Deploy app to AKS
         uses: azure/k8s-deploy@v1.5
