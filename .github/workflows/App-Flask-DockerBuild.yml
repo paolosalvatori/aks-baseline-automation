@@ -147,7 +147,7 @@ jobs:
       - name: Set Container Image
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i "(.spec.template.spec.containers[0].image)|=${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}" workloads/flask/deployment.yaml
+          cmd: yq -i "(.spec.template.spec.containers[0].image)|=\"${{ env.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}\"" workloads/flask/deployment.yaml
 
       - name: Read Public IP address of the NGINX Ingress Controller
         id: step_one
@@ -157,7 +157,7 @@ jobs:
       - name: Set Ingress Hostname
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i "(.spec.rules[0].host)|=${{ env.ipAddress }}.nip.io" workloads/flask/ingress.yaml
+          cmd: yq -i "(.spec.rules[0].host)|=\"${{ env.ipAddress }}.nip.io\"" workloads/flask/ingress.yaml
 
       - name: Deploy app to AKS
         uses: azure/k8s-deploy@v1.5
