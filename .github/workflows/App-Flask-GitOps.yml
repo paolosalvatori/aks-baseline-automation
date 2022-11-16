@@ -44,12 +44,10 @@ jobs:
       # Get application code from repo
       - name: Get application code from repo
         uses: actions/checkout@main
-        with:
-          repository: ${{ inputs.AppRepo}}
-          #ref: ${{ inputs.AppRepoRef}}
       
       # Logs into your Azure subscription
-      - uses: azure/login@v1
+      - name: Azure Login
+        uses: Azure/login@v1.4.3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -83,8 +81,8 @@ jobs:
           APPNAME: "${{ inputs.APPNAME }}"
         run: |
           cd "workloads/$APPNAME"
-          docker build . -t ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.run_number }}
-          docker push ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.run_number }}
+          docker build . -t ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
+          docker push ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
 
   Update-K8s-Manifests:
     name: Update K8s Deployment Manifest with Image Version
@@ -102,13 +100,13 @@ jobs:
     #    inlineScript: |
     #      $line = Get-Content workloads/flask/deployment.yaml | Select-String image: | Select-Object -ExpandProperty Line
     #      $content = Get-Content workloads/flask/deployment.yaml
-    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.run_number }}"} | Set-Content workloads/flask/deployment.yaml
+    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"} | Set-Content workloads/flask/deployment.yaml
     #    azPSVersion: "latest"
 
     - name: Set Container Image
       uses: mikefarah/yq@master
       with:
-        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.run_number }}"' workloads/flask/deployment.yaml
+        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"' workloads/flask/deployment.yaml
     
     - name: Commit changes in manifest to repo
       run: | 
