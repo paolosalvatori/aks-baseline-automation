@@ -78,12 +78,13 @@ jobs:
       # Builds and Pushes the container image to the Azure Container Registry (ACR)
       - name: Container build and push to a Azure Container Registry (ACR)
         env:
+          ACRSERVER: "${{ steps.acrconnect.outputs.loginServer }}"
           APPNAME: "${{ inputs.APPNAME }}"
         run: |
           cd "workloads/$APPNAME"
-          docker build . -t ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
-          docker push ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}
-
+          docker build . -t $ACRSERVER/$APPNAME:${{ github.sha }}
+          docker push $ACRSERVER/$APPNAME:${{ github.sha }}
+          
   Update-K8s-Manifests:
     name: Update K8s Deployment Manifest with Image Version
     needs: BuildPush
