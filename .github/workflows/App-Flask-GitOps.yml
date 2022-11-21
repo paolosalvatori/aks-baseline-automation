@@ -37,6 +37,7 @@ permissions:
 
 jobs:
   BuildPush:
+    name: Build and Push Image
     runs-on: ubuntu-latest
     environment: ${{ inputs.Environment }}
     steps:
@@ -84,9 +85,9 @@ jobs:
           cd "workloads/$APPNAME"
           docker build . -t $ACRSERVER/$APPNAME:${{ github.sha }}
           docker push $ACRSERVER/$APPNAME:${{ github.sha }}
-          
+
   Update-K8s-Manifests:
-    name: Update K8s Deployment Manifest with Image Version
+    name: Update YAML Manifests
     needs: BuildPush
     environment: ${{ inputs.Environment }}
     runs-on: ubuntu-latest

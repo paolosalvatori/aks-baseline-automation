@@ -48,6 +48,7 @@ permissions:
 
 jobs:
   BuildPush:
+    name: Build and Push Image
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     env:
@@ -101,6 +102,7 @@ jobs:
           docker push $ACRSERVER/$APPNAME:${{ github.sha }}
 
   Deploy:
+    name: Deploy Application
     runs-on: ubuntu-latest
     environment: ${{ inputs.ENVIRONMENT }}
     env:
