@@ -17,7 +17,7 @@ on:
     branches:
       - 'main'
     paths:
-      - workload/flask/*
+      - workloads/flask/*
     
   workflow_dispatch:
     inputs:
