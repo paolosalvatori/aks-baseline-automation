@@ -16,6 +16,8 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - workload/flask/*
   workflow_dispatch:
     inputs:
       ACRNAME:
