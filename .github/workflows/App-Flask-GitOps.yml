@@ -105,13 +105,13 @@ jobs:
     #    inlineScript: |
     #      $line = Get-Content workloads/flask/deployment.yaml | Select-String image: | Select-Object -ExpandProperty Line
     #      $content = Get-Content workloads/flask/deployment.yaml
-    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"} | Set-Content workloads/flask/deployment.yaml
+    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME || 'flask' }}:${{ github.sha }}"} | Set-Content workloads/flask/deployment.yaml
     #    azPSVersion: "latest"
 
     - name: Set Container Image
       uses: mikefarah/yq@master
       with:
-        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"' workloads/flask/deployment.yaml
+        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME || 'flask' }}:${{ github.sha }}"' workloads/flask/deployment.yaml
     
     - name: Commit changes in manifest to repo
       run: | 
