@@ -18,6 +18,7 @@ on:
       - 'main'
     paths:
       - workload/flask/*
+    
   workflow_dispatch:
     inputs:
       ACRNAME:
@@ -44,7 +45,7 @@ jobs:
   BuildPush:
     name: Build and Push Image
     runs-on: ubuntu-latest
-    environment: ${{ inputs.Environment }}
+    environment: ${{ inputs.Environment || 'production' }}
     steps:
     
       # Get application code from repo
@@ -68,8 +69,8 @@ jobs:
       - name: Connect to Azure Container Registry (ACR)
         id: acrconnect
         run: |
-          echo "Retrieving access token from ${{ inputs.ACRNAME}}"
-          TOKEN=$(az acr login -n ${{ inputs.ACRNAME}} --expose-token)
+          echo "Retrieving access token from ${{ inputs.ACRNAME || 'MiaAcr'}}"
+          TOKEN=$(az acr login -n ${{ inputs.ACRNAME || 'MiaAcr' }} --expose-token)
 
           if [ -z "$TOKEN" ]
           then
@@ -90,7 +91,7 @@ jobs:
       - name: Container build and push to a Azure Container Registry (ACR)
         env:
           ACRSERVER: "${{ steps.acrconnect.outputs.loginServer }}"
-          APPNAME: "${{ inputs.APPNAME }}"
+          APPNAME: "${{ inputs.APPNAME || 'flask' }}"
         run: |
           cd "workloads/$APPNAME"
           docker build . -t $ACRSERVER/$APPNAME:${{ github.sha }}
@@ -112,13 +113,13 @@ jobs:
     #    inlineScript: |
     #      $line = Get-Content workloads/flask/deployment.yaml | Select-String image: | Select-Object -ExpandProperty Line
     #      $content = Get-Content workloads/flask/deployment.yaml
-    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"} | Set-Content workloads/flask/deployment.yaml
+    #      $content | ForEach-Object {$_ -replace $line,"        image: ${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"} | Set-Content workloads/flask/deployment.yaml
     #    azPSVersion: "latest"
 
     - name: Set Container Image
       uses: mikefarah/yq@master
       with:
-        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"' workloads/flask/deployment.yaml
+        cmd: yq -i '(.spec.template.spec.containers[0].image)|="${{ inputs.ACRNAME || 'MiaAcr' }}.azurecr.io/${{ inputs.APPNAME }}:${{ github.sha }}"' workloads/flask/deployment.yaml
     
     - name: Commit changes in manifest to repo
       run: | 
